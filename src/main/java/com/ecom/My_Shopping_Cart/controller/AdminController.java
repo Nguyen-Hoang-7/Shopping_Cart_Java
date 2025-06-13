@@ -2,11 +2,10 @@ package com.ecom.My_Shopping_Cart.controller;
 
 import com.ecom.My_Shopping_Cart.model.Category;
 import com.ecom.My_Shopping_Cart.model.Product;
+import com.ecom.My_Shopping_Cart.model.ProductOrder;
 import com.ecom.My_Shopping_Cart.model.UserDtls;
-import com.ecom.My_Shopping_Cart.service.CartService;
-import com.ecom.My_Shopping_Cart.service.CategoryService;
-import com.ecom.My_Shopping_Cart.service.ProductService;
-import com.ecom.My_Shopping_Cart.service.UserService;
+import com.ecom.My_Shopping_Cart.service.*;
+import com.ecom.My_Shopping_Cart.utils.OrderStatus;
 import jakarta.mail.Multipart;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +39,9 @@ public class AdminController {
 
     @Autowired
     private CartService cartService;
+
+    @Autowired
+    private OrderService orderService;
 
     @ModelAttribute
     public void getUserDetails(Principal p, Model m) {
@@ -269,5 +271,33 @@ public class AdminController {
             session.setAttribute("errorMsg", "Cannot update account status. Something is wrong on the server");
         }
         return "redirect:/admin/users";
+    }
+
+    @GetMapping("/orders")
+    public String getAllOrders(Model m) {
+        List<ProductOrder> allOrders = orderService.getAllOrders();
+        m.addAttribute("orders", allOrders);
+        return "/admin/orders";
+    }
+
+    @PostMapping("/update-order-status")
+    public String updateOrderStatus(@RequestParam Integer id, @RequestParam Integer st, HttpSession session) {
+        OrderStatus[] values = OrderStatus.values();
+        String status = null;
+
+        for (OrderStatus orderStatus: values) {
+            if (orderStatus.getId().equals(st)) {
+                status = orderStatus.getName();
+            }
+        }
+
+        Boolean updateOrder = orderService.updateOrderStatus(id, status);
+
+        if (updateOrder) {
+            session.setAttribute("succMsg", "Status Updated");
+        } else {
+            session.setAttribute("errorMsg", "Status not updated");
+        }
+        return "redirect:/admin/orders";
     }
 }
