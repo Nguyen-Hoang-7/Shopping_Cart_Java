@@ -7,9 +7,11 @@
 </head>
 <body>
 <section>
-    <div class="container mt-5 p-1">
+    <div class="container-fluid mt-5 p-1">
         <div class="row">
             <p class="text-center fs-3 mt-2">All Orders</p>
+            <hr>
+            <a href="/admin/" class="text-decoration-none"><i class="fa-solid fa-arrow-left"></i> Back</a>
             <th:block th:if="${session.succMsg}">
                 <p class="text-success fw-bold text-center">[[${session.succMsg}]]</p>
                 <th:block th:text="${@commonServiceImpl.removeSessionMessage()}"></th:block>
@@ -34,7 +36,7 @@
             </div>
             <div class="col-md-12 ps-4 pe-4">
 
-                <table class="table table-ordered">
+                <table class="table table-ordered cash-sh">
                     <thead>
                     <tr>
                         <th scope="col">Order Id</th>
@@ -79,7 +81,13 @@
                                     </div>
                                     <input th:value="${o.id}" name="id" type="hidden">
                                     <div class="col">
-                                        <button class="btn btn-primary btn-sm col">Update</button>
+                                        <th:block th:if="${o.status=='Cancelled' || o.status=='Delivered'}">
+                                            <button class="btn btn-primary btn-sm col disabled">Update</button>
+                                        </th:block>
+                                        <th:block th:unless="${o.status=='Cancelled' || o.status=='Delivered'}">
+                                            <button class="btn btn-sm btn-primary">Update</button>
+                                        </th:block>
+
                                     </div>
                                 </div>
                             </form>

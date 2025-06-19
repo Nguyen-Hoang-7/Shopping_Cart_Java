@@ -2,14 +2,19 @@ package com.ecom.My_Shopping_Cart.controller;
 
 import com.ecom.My_Shopping_Cart.model.*;
 import com.ecom.My_Shopping_Cart.service.*;
+import com.ecom.My_Shopping_Cart.utils.CommonUtil;
 import com.ecom.My_Shopping_Cart.utils.OrderStatus;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 
@@ -31,17 +36,27 @@ public class UserController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private CommonUtil commonUtil;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @GetMapping("")
     public String home() {
         return "user/home";
     }
 
     @ModelAttribute
-    public void getUserDetails(Principal p, Model m) {
+    public void getUserDetails(Principal p, Model m) throws Exception {
         if (p != null) {
             String email = p.getName();
             UserDtls userDtls = userService.getUserByEmail(email);
             m.addAttribute("user", userDtls);
+            String userProfileImage = userDtls.getProfileImage();
+            String encoded_userProfileImage = URLEncoder.encode(userProfileImage, StandardCharsets.UTF_8).replace("+", "%20");
+            System.out.println(encoded_userProfileImage);
+            m.addAttribute("userProfileImage", encoded_userProfileImage);
             Integer countCart = cartService.getCountCart(userDtls.getId());
             m.addAttribute("countCart", countCart);
         }
@@ -109,7 +124,7 @@ public class UserController {
     }
 
     @PostMapping("/save-order")
-    public String saveOrder(@ModelAttribute OrderRequest request, Principal p) {
+    public String saveOrder(@ModelAttribute OrderRequest request, Principal p) throws Exception{
         //System.uot.println(request);
         UserDtls user = getLoggedInUserDetails(p);
         orderService.saveOrder(user.getId(), request);
@@ -140,13 +155,58 @@ public class UserController {
             }
         }
 
-        Boolean updateOrder = orderService.updateOrderStatus(id, status);
+        ProductOrder updateOrder = orderService.updateOrderStatus(id, status);
+        try {
+            commonUtil.sendMailForProductOrder(updateOrder, status);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        if (updateOrder) {
+        if (!ObjectUtils.isEmpty(updateOrder)) {
             session.setAttribute("succMsg", "Status Updated");
         } else {
             session.setAttribute("errorMsg", "Status not updated");
         }
         return "redirect:/user/user-orders";
+    }
+
+    @GetMapping("/profile")
+    public String profile() {
+
+        return "/user/profile";
+    }
+
+    @PostMapping("/update-profile")
+    public String updateProfile(@ModelAttribute UserDtls user, @RequestParam MultipartFile file, HttpSession session) {
+        UserDtls updateUserProfile = userService.updateUserProfile(user, file);
+        if (!ObjectUtils.isEmpty(updateUserProfile)) {
+            session.setAttribute("succMsg", "Profile is updated");
+        } else {
+            session.setAttribute("errorMsg", "Profile is not updated");
+        }
+        return "redirect:/user/profile";
+    }
+
+    @PostMapping("/change-password")
+    public String changePassword(@RequestParam String newPassword, @RequestParam String currentPassword, Principal p, HttpSession session) {
+        UserDtls loggedInUserDetails = getLoggedInUserDetails(p);
+        boolean matches = passwordEncoder.matches(currentPassword, loggedInUserDetails.getPassword());
+        if (matches) {
+            String encodePassword = passwordEncoder.encode(newPassword);
+            loggedInUserDetails.setPassword(encodePassword);
+            UserDtls updateUser = userService.updateUser(loggedInUserDetails);
+            if (ObjectUtils.isEmpty(updateUser)) {
+                session.setAttribute("errorMsg", "Password is not updated || Error in server");
+            }
+            else {
+                session.setAttribute("succMsg", "Password Updated Successfully");
+            }
+
+        }
+        else {
+            session.setAttribute("errorMsg", "Current Password Incorrect");
+        }
+        return "redirect:/user/profile";
     }
 }
