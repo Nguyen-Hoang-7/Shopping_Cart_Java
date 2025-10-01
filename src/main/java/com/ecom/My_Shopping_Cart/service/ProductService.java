@@ -22,4 +22,10 @@ public interface ProductService {
     public List<Product> searchProduct(String ch);
 
     public Page<Product> getAllActiveProductPagination(Integer pageNumber, Integer pageSize, String category);
+
+    public Page<Product> searchProductPagination(Integer pageNo, Integer pageSize, String ch);
+
+    public Page<Product> getAllProductsPagination(Integer pageNo, Integer pageSize);
+
+    public Page<Product> searchActiveProductPagination(Integer pageNo, Integer pageSize, String category, String ch);
 }

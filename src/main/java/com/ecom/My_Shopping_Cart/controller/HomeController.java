@@ -19,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collector;
 
 @Controller
 public class HomeController {
@@ -70,7 +72,11 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String index() {
+    public String index(Model m) {
+        List<Category> allActiveCategories = categoryService.getAllActiveCategory().stream().limit(6).toList();
+        List<Product> allActiveProducts = productService.getAllActiveProducts("").stream().limit(8).toList();
+        m.addAttribute("categories", allActiveCategories);
+        m.addAttribute("products", allActiveProducts);
         return "index";
     }
 
@@ -85,7 +91,7 @@ public class HomeController {
     }
 
     @GetMapping("/products")
-    public String products(Model m, @RequestParam(value = "category", defaultValue = "") String category, @RequestParam(name = "pageNumber", defaultValue = "0") Integer pageNumber, @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize) {
+    public String products(Model m, @RequestParam(value = "category", defaultValue = "") String category, @RequestParam(name = "pageNumber", defaultValue = "0") Integer pageNumber, @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize, @RequestParam(defaultValue = "") String ch) {
         System.out.println("category = " + category);
         List<Category> categories = categoryService.getAllActiveCategory();
         // List<Product> products = productService.getAllActiveProducts(category);
@@ -93,7 +99,14 @@ public class HomeController {
         m.addAttribute("categories", categories);
         // m.addAttribute("products", products);
         m.addAttribute("paramValue", category);
-        Page<Product> page = productService.getAllActiveProductPagination(pageNumber, pageSize, category);
+
+        Page<Product> page = null;
+        if (StringUtils.isEmpty(ch))
+        {
+            page = productService.getAllActiveProductPagination(pageNumber, pageSize, category);
+        }
+        else page = productService.searchActiveProductPagination(pageNumber, pageSize, category, ch);
+
         List<Product> products = page.getContent();
         m.addAttribute("products", products);
         m.addAttribute("productsSize", products.size());
@@ -117,22 +130,30 @@ public class HomeController {
     @PostMapping("/saveUser")
     public String saveUser(@ModelAttribute UserDtls user, @RequestParam("img") MultipartFile file, HttpSession session) throws IOException
     {
-        String imageName = file.isEmpty() ? "default.jpg" : file.getOriginalFilename();
-        user.setProfileImage(imageName);
-        UserDtls saveUser = userService.saveUser(user);
-        if (!ObjectUtils.isEmpty(saveUser)) {
-            if (!file.isEmpty()) {
-                File saveFile = new ClassPathResource("static/img").getFile();
-                Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + "profile_img" + File.separator + file.getOriginalFilename());
+        Boolean existsEmail = userService.existsEmail(user.getEmail());
 
-                System.out.println(path);
-                Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-                session.setAttribute("succMsg", "Successfully saving user");
-            }
-            else {
-                session.setAttribute("errorMsg", "Cannot save user. Something is wrong on the server !");
+        if (existsEmail) {
+            session.setAttribute("errorMsg", "Email already exist");
+        }
+        else {
+            String imageName = file.isEmpty() ? "default.jpg" : file.getOriginalFilename();
+            user.setProfileImage(imageName);
+            UserDtls saveUser = userService.saveUser(user);
+            if (!ObjectUtils.isEmpty(saveUser)) {
+                if (!file.isEmpty()) {
+                    File saveFile = new ClassPathResource("static/img").getFile();
+                    Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + "profile_img" + File.separator + file.getOriginalFilename());
+
+                    System.out.println(path);
+                    Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+                    session.setAttribute("succMsg", "Successfully saving user");
+                }
+                else {
+                    session.setAttribute("errorMsg", "Cannot save user. Something is wrong on the server !");
+                }
             }
         }
+
         return "redirect:/signin";
     }
 

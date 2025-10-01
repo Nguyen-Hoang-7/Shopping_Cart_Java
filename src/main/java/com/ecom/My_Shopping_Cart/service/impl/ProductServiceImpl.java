@@ -109,6 +109,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<Product> getAllProductsPagination(Integer pageNo, Integer pageSize) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        return productRepository.findAll(pageable);
+    }
+
+    @Override
     public Page<Product> getAllActiveProductPagination(Integer pageNumber, Integer pageSize, String category) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<Product> pageProducts = null;
@@ -122,4 +128,30 @@ public class ProductServiceImpl implements ProductService {
         //Page<Product> pageProduct = productRepository.findByIsActiveTrue(pageable);
         return pageProducts;
     }
+
+
+    @Override
+    public Page<Product> searchProductPagination(Integer pageNo, Integer pageSize, String ch) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        return productRepository.findByTitleContainingIgnoreCaseOrCategoryContainingIgnoreCase(ch, ch, pageable);
+    }
+
+
+    @Override
+    public Page<Product> searchActiveProductPagination(Integer pageNo, Integer pageSize, String category, String ch) {
+
+        Page<Product> pageProduct = null;
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+
+        pageProduct = productRepository.findByisActiveTrueAndTitleContainingIgnoreCaseOrCategoryContainingIgnoreCase(ch,
+                ch, pageable);
+
+//		if (ObjectUtils.isEmpty(category)) {
+//			pageProduct = productRepository.findByIsActiveTrue(pageable);
+//		} else {
+//			pageProduct = productRepository.findByCategory(pageable, category);
+//		}
+        return pageProduct;
+    }
+
 }
