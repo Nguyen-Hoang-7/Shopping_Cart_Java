@@ -83,7 +83,7 @@
                                     class="fa-solid fa-user"></i> [[${user.name}]]</a>
                             <ul class="dropdown-menu">
                                 <li th:if="${user.role=='ROLE_USER'}"><a class="dropdown-item" href="/user/profile">Profile</a></li>
-                                <li th:if="${user.role=='ROLE_ADMIN'}"><a class="dropdown-item" href="/admin/profile">My Orders</a></li>
+                                <li th:if="${user.role=='ROLE_ADMIN'}"><a class="dropdown-item" href="/admin/profile">Profile</a></li>
                                 <li th:if="${user.role=='ROLE_USER'}"><a class="dropdown-item" href="/user/user-orders">My Orders</a></li>
                                 <li><a class="dropdown-item" href="/logout">Log out</a></li>
                                 <li><hr class="dropdown-divider"></li>
