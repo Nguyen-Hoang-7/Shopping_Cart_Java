@@ -23,7 +23,7 @@
               <th:block th:text="${@commonServiceImpl.removeSessionMessage()}"></th:block>
             </th:block>
             <div class="text-center">
-              <img alt="" class="border p-2" th:src="@{'/img/profile_img/'+${user.profileImage}}" style="width: 150px; height: 150px; border-radius: 50%;">
+              <img alt="" class="border p-2" th:src="@{'/img/profile_img/'+${#uris.escapePathSegment(user.profileImage)}}" style="width: 150px; height: 150px; border-radius: 50%;">
             </div>
             <div class="col-md-10 offset-md-1 mt-4">
               <table class="table table-borderless">
